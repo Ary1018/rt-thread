@@ -83,6 +83,8 @@ static rt_bool_t tx_is_waiting = RT_FALSE;
 static  ETH_HandleTypeDef EthHandle;
 static struct rt_stm32_eth stm32_eth_device;
 static struct rt_semaphore tx_wait;
+struct rt_semaphore dhcp_pout_wait;
+
 
 /* interrupt service routine */
 void ETH_IRQHandler(void)
@@ -560,7 +562,7 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef *heth)
     NVIC_Configuration();
 }
 
-static int rt_hw_stm32_eth_init(void)
+int rt_hw_stm32_eth_init(void)
 {
     rt_err_t state;
     
@@ -591,6 +593,13 @@ static int rt_hw_stm32_eth_init(void)
     /* init tx semaphore */
     rt_sem_init(&tx_wait, "tx_wait", 0, RT_IPC_FLAG_FIFO);
 
+
+  
+    
+    rt_sem_init(&dhcp_pout_wait, "dhcp_pout_wait", 0, RT_IPC_FLAG_FIFO);
+	//rt_mutex_create (const char* name, rt_uint8_t flag);
+	rt_sem_release(&dhcp_pout_wait);
+
     /* register eth device */
     STM32_ETH_PRINTF("eth_device_init start\r\n");
     state = eth_device_init(&(stm32_eth_device.parent), "e0");
@@ -602,8 +611,12 @@ static int rt_hw_stm32_eth_init(void)
     {
         STM32_ETH_PRINTF("eth_device_init faild: %d\r\n", state);
     }
+		
+    rt_kprintf("xxx2\n");
 	
 	eth_device_linkchange(&stm32_eth_device.parent, RT_TRUE);   //linkup the e0 for lwip to check
+	
+	
 	
     return state;
 }

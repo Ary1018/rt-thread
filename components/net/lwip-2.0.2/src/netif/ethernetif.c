@@ -127,6 +127,8 @@ static err_t ethernetif_linkoutput(struct netif *netif, struct pbuf *p)
     RT_ASSERT(netif != RT_NULL);
     enetif = (struct eth_device*)netif->state;
 
+	rt_kprintf("\nlink_out_put:%p.\n",p);
+	
     /* send a message to eth tx thread */
     msg.netif = netif;
     msg.buf   = p;
@@ -381,6 +383,8 @@ static void eth_rx_thread_entry(void* parameter)
                 status = device->link_status;
                 device->link_changed = 0x00;
                 rt_hw_interrupt_enable(level);
+				
+				rt_kprintf("\nreadytolinkup\n");
 
                 if (status)
                     netifapi_netif_set_link_up(device->netif);
@@ -454,6 +458,7 @@ int eth_system_device_init(void)
 
     return (int)result;
 }
+//INIT_DEVICE_EXPORT(eth_system_device_init);
 INIT_PREV_EXPORT(eth_system_device_init);
 
 #ifdef RT_USING_FINSH

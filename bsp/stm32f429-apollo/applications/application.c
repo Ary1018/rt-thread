@@ -52,7 +52,9 @@ void rt_init_thread_entry(void* parameter)
 #ifdef RT_USING_COMPONENTS_INIT
     rt_components_init();
 #endif
-    
+	
+    //rt_hw_stm32_eth_init();
+	
     /* GDB STUB */
 #ifdef RT_USING_GDB
     gdb_set_device("uart6");

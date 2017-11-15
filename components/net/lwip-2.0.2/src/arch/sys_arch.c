@@ -99,11 +99,16 @@ static void tcpip_init_done_callback(void *arg)
             /* leave critical */
             rt_exit_critical();
 
+			LOCK_TCPIP_CORE();
+			
             netif_add(ethif->netif, &ipaddr, &netmask, &gw,
                       ethif, netif_device_init, tcpip_input);
 
             if (netif_default == RT_NULL)
                 netif_set_default(ethif->netif);
+			
+			rt_kprintf("\n %s thread:",rt_thread_self()->name);
+			rt_kprintf("\nreadyto_dhcp_up_in_callback\n");
 
 #if LWIP_DHCP
             /* set interface up */
@@ -119,6 +124,8 @@ static void tcpip_init_done_callback(void *arg)
             {
                 netif_set_link_up(ethif->netif);
             }
+
+			UNLOCK_TCPIP_CORE();
 
             /* enter critical */
             rt_enter_critical();
@@ -159,7 +166,7 @@ int lwip_system_init(void)
 
         return -1;
     }
-    rt_sem_detach(&done_sem);
+    rt_sem_detach(&done_sem);  //看看有没有到这里
 
     /* set default ip address */
 #if !LWIP_DHCP

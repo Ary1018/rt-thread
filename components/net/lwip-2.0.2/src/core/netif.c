@@ -737,6 +737,8 @@ netif_set_link_up(struct netif *netif)
   if (!(netif->flags & NETIF_FLAG_LINK_UP)) {
     netif->flags |= NETIF_FLAG_LINK_UP;
 
+   rt_kprintf("\nset_link_up\n");
+
 #if LWIP_DHCP
     dhcp_network_changed(netif);
 #endif /* LWIP_DHCP */

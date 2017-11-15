@@ -78,6 +78,8 @@
 
 #include <string.h>
 
+extern struct rt_semaphore dhcp_pout_wait;
+
 /** DHCP_CREATE_RAND_XID: if this is set to 1, the xid is created using
  * LWIP_RAND() (this overrides DHCP_GLOBAL_XID)
  */
@@ -982,12 +984,21 @@ dhcp_discover(struct netif *netif)
     dhcp_option_trailer(dhcp);
 
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_discover: realloc()ing\n"));
-    pbuf_realloc(dhcp->p_out, sizeof(struct dhcp_msg) - DHCP_OPTIONS_LEN + dhcp->options_out_len);
+    pbuf_realloc(dhcp->p_out, sizeof(struct dhcp_msg) - DHCP_OPTIONS_LEN + dhcp->options_out_len);  //这里正在重新分配内存结果发生了线程切换
 
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_discover: sendto(DISCOVER, IP_ADDR_BROADCAST, DHCP_SERVER_PORT)\n"));
     udp_sendto_if_src(dhcp_pcb, dhcp->p_out, IP_ADDR_BROADCAST, DHCP_SERVER_PORT, netif, IP4_ADDR_ANY);
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_discover: deleting()ing\n"));
-    dhcp_delete_msg(dhcp);
+	
+
+    dhcp_delete_msg(dhcp);   //
+
+    rt_kprintf("\ndel_dhcp\n");
+	
+	rt_sem_release(&dhcp_pout_wait);
+
+	
+	
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_STATE, ("dhcp_discover: SELECTING\n"));
   } else {
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_LEVEL_SERIOUS, ("dhcp_discover: could not allocate DHCP request\n"));
@@ -1818,12 +1829,34 @@ dhcp_create_msg(struct netif *netif, struct dhcp *dhcp, u8_t message_type)
     xid_initialised = !xid_initialised;
   }
 #endif
+  
+  int result;
+  
+  //pbuf_free(dhcp->p_out);
+//  if (dhcp->p_out != NULL)
+//  {
+//    dhcp_delete_msg(dhcp); 
+//  }
+//   result = rt_sem_take(&dhcp_pout_wait, RT_WAITING_FOREVER);
+//  if (result == -RT_ETIMEOUT)
+//  {
+//    return -1;
+//  }
+  
+  rt_kprintf("\n %s thread:",rt_thread_self()->name);
+  rt_kprintf("in_dhcp \n");
+  
+
   LWIP_ERROR("dhcp_create_msg: netif != NULL", (netif != NULL), return ERR_ARG;);
   LWIP_ERROR("dhcp_create_msg: dhcp != NULL", (dhcp != NULL), return ERR_VAL;);
-  LWIP_ASSERT("dhcp_create_msg: dhcp->p_out == NULL", dhcp->p_out == NULL);
+  LWIP_ASSERT("dhcp_create_msg: dhcp->p_out == NULL", dhcp->p_out == NULL);       //也就是说这个地方必须为空 如果不为空就会出错
   LWIP_ASSERT("dhcp_create_msg: dhcp->msg_out == NULL", dhcp->msg_out == NULL);
+  
   dhcp->p_out = pbuf_alloc(PBUF_TRANSPORT, sizeof(struct dhcp_msg), PBUF_RAM);
-  if (dhcp->p_out == NULL) {
+  
+  rt_kprintf("\ndhcp->pout:%p.\n",dhcp->p_out);
+  
+  if (dhcp->p_out == NULL) {                                                                                                           
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE | LWIP_DBG_LEVEL_SERIOUS,
       ("dhcp_create_msg(): could not allocate pbuf\n"));
     return ERR_MEM;

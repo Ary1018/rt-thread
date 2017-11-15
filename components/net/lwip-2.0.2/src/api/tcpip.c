@@ -92,8 +92,11 @@ tcpip_thread(void *arg)
   if (tcpip_init_done != NULL) {
     tcpip_init_done(tcpip_init_done_arg);
   }
+  
 
-  LOCK_TCPIP_CORE();
+  LOCK_TCPIP_CORE();     //如果tcpip线程运行起来的话，会暂时占据这个信号量
+  
+  
   while (1) {                          /* MAIN Loop */
     UNLOCK_TCPIP_CORE();
     LWIP_TCPIP_THREAD_ALIVE();
@@ -366,8 +369,12 @@ tcpip_api_call(tcpip_api_call_fn fn, struct tcpip_api_call_data *call)
 {
 #if LWIP_TCPIP_CORE_LOCKING
   err_t err;
-  LOCK_TCPIP_CORE();
-  err = fn(call);
+
+  LOCK_TCPIP_CORE();             //如果先调用tcpip的api的话
+
+  rt_kprintf("\nbefore_api_call\n");
+  err = fn(call);      //这里如果来调用tcpip的api的话，由于没有互斥锁的保护，就会调用lwip的api,但是这个时候TCPIP的进程还没有运行起来就错了
+  rt_kprintf("\nafter_api_call\n");
   UNLOCK_TCPIP_CORE();
   return err;
 #else /* LWIP_TCPIP_CORE_LOCKING */
@@ -465,14 +472,21 @@ tcpip_init(tcpip_init_done_fn initfunc, void *arg)
 
   tcpip_init_done = initfunc;
   tcpip_init_done_arg = arg;
+	
   if (sys_mbox_new(&mbox, TCPIP_MBOX_SIZE) != ERR_OK) {
     LWIP_ASSERT("failed to create tcpip_thread mbox", 0);
   }
+  
+
+  
 #if LWIP_TCPIP_CORE_LOCKING
   if (sys_mutex_new(&lock_tcpip_core) != ERR_OK) {
     LWIP_ASSERT("failed to create lock_tcpip_core", 0);
   }
 #endif /* LWIP_TCPIP_CORE_LOCKING */
+
+  rt_kprintf("\nmail mutex 4\n");
+
 
   sys_thread_new(TCPIP_THREAD_NAME, tcpip_thread, NULL, TCPIP_THREAD_STACKSIZE, TCPIP_THREAD_PRIO);
 }

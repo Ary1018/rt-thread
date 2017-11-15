@@ -44,7 +44,7 @@
 #define BYTE_ORDER                  LITTLE_ENDIAN
 #endif
 
-/* #define RT_LWIP_DEBUG */
+#define RT_LWIP_DEBUG
 
 #ifdef RT_LWIP_DEBUG
 #define LWIP_DEBUG
@@ -65,7 +65,7 @@
 #define SOCKETS_DEBUG               LWIP_DBG_OFF
 #define DNS_DEBUG                   LWIP_DBG_OFF
 #define AUTOIP_DEBUG                LWIP_DBG_OFF
-#define DHCP_DEBUG                  LWIP_DBG_OFF
+#define DHCP_DEBUG                  LWIP_DBG_ON
 #define IP_DEBUG                    LWIP_DBG_OFF
 #define IP_REASS_DEBUG              LWIP_DBG_OFF
 #define ICMP_DEBUG                  LWIP_DBG_OFF
@@ -349,6 +349,9 @@
 #define MD5_SUPPORT                 1      /* Set > 0 for MD5 (see also CHAP) */
 
 #endif /* PPP_SUPPORT */
+
+#define LWIP_TCPIP_CORE_LOCKING 1
+
 
 /**
  * LWIP_POSIX_SOCKETS_IO_NAMES==1: Enable POSIX-style sockets functions names.
